@@ -12,6 +12,79 @@ const onClickLogo = () => {
     window.location = 'https://scratch.mit.edu';
 };
 
+// Local backend configuration - change these URLs to match your backend
+const LOCAL_BACKEND_HOST = 'http://localhost:8080';
+
+// Helper to get cookie by name
+const getCookie = name => {
+    const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
+    if (match) {
+        try {
+            return JSON.parse(decodeURIComponent(match[2]));
+        } catch {
+            return null;
+        }
+    }
+    return null;
+};
+
+// Get session from cookie
+const getSession = () => {
+    return getCookie('student_session');
+};
+
+const accountMenuOptions = {
+    canHaveSession: true,
+    canRegister: true,
+    canLogin: true,
+    canLogout: true,
+    myStuffUrl: `${LOCAL_BACKEND_HOST}/mystuff/`,
+    profileUrl: `${LOCAL_BACKEND_HOST}/users/`,
+    accountSettingsUrl: `${LOCAL_BACKEND_HOST}/account/settings/`,
+};
+
+// Simple login form renderer for local backend testing
+const renderLogin = ({onClose}) => (
+    <form
+        style={{padding: '1rem'}}
+        onSubmit={e => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const username = formData.get('username');
+            const password = formData.get('password');
+            // TODO: Implement your backend login API call here
+            log(`Login attempt: ${username}`);
+            fetch(`${LOCAL_BACKEND_HOST}/api/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username, password}),
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    log('Login response:', data);
+                    onClose();
+                    window.location.reload();
+                })
+                .catch(err => {
+                    log('Login error:', err);
+                });
+        }}
+    >
+        <div style={{marginBottom: '0.5rem'}}>
+            <label style={{display: 'block', marginBottom: '0.25rem'}}>Username</label>
+            <input name="username" type="text" required style={{width: '100%', padding: '0.5rem'}} />
+        </div>
+        <div style={{marginBottom: '0.5rem'}}>
+            <label style={{display: 'block', marginBottom: '0.25rem'}}>Password</label>
+            <input name="password" type="password" required style={{width: '100%', padding: '0.5rem'}} />
+        </div>
+        <button type="submit" style={{width: '100%', padding: '0.5rem', cursor: 'pointer'}}>
+            Sign In
+        </button>
+    </form>
+);
+
 const handleTelemetryModalCancel = () => {
     log('User canceled telemetry modal');
 };
@@ -64,25 +137,66 @@ export default appTarget => {
 
     const root = ReactDomClient.createRoot(appTarget);
 
-    root.render(
-        // important: this is checking whether `simulateScratchDesktop` is truthy, not just defined!
-        simulateScratchDesktop ?
-            <WrappedGui
-                canEditTitle
-                platform={PLATFORM.DESKTOP}
-                showTelemetryModal
-                canSave={false}
-                onTelemetryModalCancel={handleTelemetryModalCancel}
-                onTelemetryModalOptIn={handleTelemetryModalOptIn}
-                onTelemetryModalOptOut={handleTelemetryModalOptOut}
-            /> :
-            <WrappedGui
-                canEditTitle
-                backpackVisible
-                showComingSoon
-                backpackHost={backpackHost}
-                canSave={false}
-                onClickLogo={onClickLogo}
-            />
-    );
+    // Fetch session from API and render
+    fetch(`${LOCAL_BACKEND_HOST}/api/session`, {
+        credentials: 'include'
+    })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            return null;
+        })
+        .then(session => {
+            // Handle response: { loggedIn: true, user: { name: "..." } }
+            const username = session?.user?.name || session?.user?.username || null;
+            log('Session from API:', session);
+            log('Username:', username);
+
+            root.render(
+                // important: this is checking whether `simulateScratchDesktop` is truthy, not just defined!
+                simulateScratchDesktop ?
+                    <WrappedGui
+                        canEditTitle
+                        platform={PLATFORM.DESKTOP}
+                        showTelemetryModal
+                        canSave
+                        username={username}
+                        accountMenuOptions={accountMenuOptions}
+                        renderLogin={renderLogin}
+                        onTelemetryModalCancel={handleTelemetryModalCancel}
+                        onTelemetryModalOptIn={handleTelemetryModalOptIn}
+                        onTelemetryModalOptOut={handleTelemetryModalOptOut}
+                    /> :
+                    <WrappedGui
+                        canEditTitle
+                        backpackVisible
+                        showComingSoon
+                        backpackHost={backpackHost}
+                        canSave
+                        username={username}
+                        projectHost={`${LOCAL_BACKEND_HOST}/projects`}
+                        assetHost={`${LOCAL_BACKEND_HOST}/assets`}
+                        accountMenuOptions={accountMenuOptions}
+                        renderLogin={renderLogin}
+                        onClickLogo={onClickLogo}
+                    />
+            );
+        })
+        .catch(err => {
+            log('Session fetch error:', err);
+            // Render without username on error
+            root.render(
+                <WrappedGui
+                    canEditTitle
+                    backpackVisible
+                    showComingSoon
+                    backpackHost={backpackHost}
+                    canSave
+                    accountMenuOptions={accountMenuOptions}
+                    renderLogin={renderLogin}
+                    onClickLogo={onClickLogo}
+                />
+            );
+        });
 };
