@@ -34,6 +34,12 @@ const baseConfig = new ScratchWebpackConfigBuilder(
         shouldSplitChunks: false,
         cssModuleExceptions
     })
+    // Exclude workspace package dist folders from ts-loader
+    .addModuleRule({
+        test: /\.js$/,
+        include: /packages[\\/].*[\\/]dist/,
+        type: 'javascript/auto'
+    })
     .setTarget('browserslist')
     .merge({
         output: {
@@ -223,4 +229,36 @@ case 'dist-standalone': config = distStandaloneConfig.get(); break;
 default: config = buildConfig.get(); break;
 }
 
-module.exports = buildDist ? config : buildConfig.get();
+const finalConfig = buildDist ? config : buildConfig.get();
+
+// Fix ts-loader to handle workspace dist files with transpileOnly
+// This is needed when building in npm workspaces where dist bundles contain octal escapes
+function fixTsLoader(rules) {
+    if (!rules) return;
+    rules.forEach(rule => {
+        // Handle oneOf structure
+        if (rule.oneOf) {
+            fixTsLoader(rule.oneOf);
+            return;
+        }
+        // Find ts-loader in use array
+        if (rule.use && Array.isArray(rule.use)) {
+            rule.use.forEach(u => {
+                if (typeof u === 'object' && u.loader && u.loader.includes('ts-loader')) {
+                    u.options = u.options || {};
+                    u.options.transpileOnly = true;
+                }
+            });
+        }
+        // Handle direct loader
+        if (rule.loader && rule.loader.includes('ts-loader')) {
+            rule.options = rule.options || {};
+            rule.options.transpileOnly = true;
+        }
+    });
+}
+if (finalConfig.module && finalConfig.module.rules) {
+    fixTsLoader(finalConfig.module.rules);
+}
+
+module.exports = finalConfig;

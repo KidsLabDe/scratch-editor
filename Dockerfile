@@ -3,22 +3,19 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY packages/scratch-gui/package*.json ./packages/scratch-gui/
-COPY packages/scratch-vm/package*.json ./packages/scratch-vm/
-COPY packages/scratch-render/package*.json ./packages/scratch-render/
-COPY packages/scratch-svg-renderer/package*.json ./packages/scratch-svg-renderer/
-COPY packages/task-herder/package*.json ./packages/task-herder/
-
-# Install dependencies
-RUN npm ci
-
-# Copy source code
+# Copy all source code first (simpler for workspaces)
 COPY . .
 
-# Build the project
-RUN npm run build
+# Install dependencies with npm install (more forgiving than npm ci for workspaces)
+RUN npm install --frozen-lockfile || npm install
+
+# Build the dev playground (simpler, single build)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+RUN npm run build --workspace=@scratch/task-herder && \
+    npm run build --workspace=@scratch/scratch-svg-renderer && \
+    npm run build --workspace=@scratch/scratch-render && \
+    npm run build --workspace=@scratch/scratch-vm && \
+    npm run build:dev --workspace=@scratch/scratch-gui
 
 # Production stage - serve with nginx
 FROM nginx:alpine
