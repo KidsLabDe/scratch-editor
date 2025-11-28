@@ -44,6 +44,8 @@ const baseConfig = new ScratchWebpackConfigBuilder(
     .merge({
         output: {
             assetModuleFilename: 'static/assets/[name].[hash][ext][query]',
+            // Ensure all URLs are relative for deployment under subpath (e.g. /editor/)
+            publicPath: './',
             library: {
                 name: 'GUI',
                 type: 'umd2'
@@ -161,11 +163,8 @@ const buildConfig = baseConfig.clone()
         output: {
             path: path.resolve(__dirname, 'build'),
 
-            // This output is loaded using a file:// scheme from the local file system.
-            // Having `publicPath: '/'` (the default) means the `gui.js` file in `build/index.html`
-            // would be looked for at the root of the filesystem, which is incorrect.
-            // Hence, we're resetting the public path to be relative.
-            publicPath: ''
+            // Relative public path for deployment under subpath (e.g. /editor/)
+            publicPath: './'
         }
     })
     .addPlugin(new HtmlWebpackPlugin({
