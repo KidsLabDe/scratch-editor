@@ -13,7 +13,7 @@ const onClickLogo = () => {
 };
 
 // Local backend configuration - change these URLs to match your backend
-const LOCAL_BACKEND_HOST = 'http://localhost:8080';
+const LOCAL_BACKEND_HOST = 'https://localhost:8080';
 
 // Helper to get cookie by name
 const getCookie = name => {
