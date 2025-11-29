@@ -12,8 +12,8 @@ const onClickLogo = () => {
     window.location = 'https://scratch.mit.edu';
 };
 
-// Local backend configuration - change these URLs to match your backend
-const LOCAL_BACKEND_HOST = 'http://localhost:8080';
+// Backend configuration: empty string in production (same origin), proxy URL in development
+const LOCAL_BACKEND_HOST = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8080';
 
 // Helper to get cookie by name
 const getCookie = name => {
