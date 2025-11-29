@@ -12,13 +12,14 @@ COPY . .
 # Install dependencies with npm install (more forgiving than npm ci for workspaces)
 RUN npm install --frozen-lockfile || npm install
 
-# Build the dev playground (simpler, single build)
+# Build for production
 ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NODE_ENV=production
 RUN npm run build --workspace=@scratch/task-herder && \
     npm run build --workspace=@scratch/scratch-svg-renderer && \
     npm run build --workspace=@scratch/scratch-render && \
     npm run build --workspace=@scratch/scratch-vm && \
-    npm run build:dev --workspace=@scratch/scratch-gui
+    NODE_ENV=production npm run build:dev --workspace=@scratch/scratch-gui
 
 # Production stage - serve with nginx
 FROM nginx:alpine

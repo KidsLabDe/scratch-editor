@@ -193,6 +193,8 @@ export default appTarget => {
                     showComingSoon
                     backpackHost={backpackHost}
                     canSave
+                    projectHost={`${LOCAL_BACKEND_HOST}/projects`}
+                    assetHost={`${LOCAL_BACKEND_HOST}/assets`}
                     accountMenuOptions={accountMenuOptions}
                     renderLogin={renderLogin}
                     onClickLogo={onClickLogo}
