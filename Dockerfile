@@ -7,19 +7,11 @@ ENV BACKEND_URL=${BACKEND_URL}
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY packages/scratch-gui/package*.json ./packages/scratch-gui/
-COPY packages/scratch-vm/package*.json ./packages/scratch-vm/
-COPY packages/scratch-render/package*.json ./packages/scratch-render/
-COPY packages/scratch-svg-renderer/package*.json ./packages/scratch-svg-renderer/
-COPY packages/task-herder/package*.json ./packages/task-herder/
+# Copy everything first (npm ci needs scripts for prepare hooks)
+COPY . .
 
 # Install dependencies
 RUN npm ci
-
-# Copy source code
-COPY . .
 
 # Build the project with BACKEND_URL environment variable
 RUN npm run build
