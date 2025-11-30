@@ -5,37 +5,41 @@ FROM node:20-alpine AS builder
 ARG BACKEND_URL=https://gameslab.kidslab.de
 ENV BACKEND_URL=${BACKEND_URL}
 
-# Increase Node.js memory limit for build (default is too low for webpack)
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Copy everything first (npm ci needs scripts for prepare hooks)
+# Copy all source code first (simpler for workspaces)
 COPY . .
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with npm install (more forgiving than npm ci for workspaces)
+RUN npm install --frozen-lockfile || npm install
 
-# Build scratch-gui using workspace command from root
-# This ensures workspace symlinks are properly resolved
-RUN npm run build --workspace=@scratch/scratch-gui
+# Build for production
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NODE_ENV=production
+RUN npm run build --workspace=@scratch/task-herder && \
+    npm run build --workspace=@scratch/scratch-svg-renderer && \
+    npm run build --workspace=@scratch/scratch-render && \
+    npm run build --workspace=@scratch/scratch-vm && \
+    NODE_ENV=production npm run build:dev --workspace=@scratch/scratch-gui
 
 # Production stage - serve with nginx
 FROM nginx:alpine
 
-# Copy the built files from scratch-gui
+# Copy built files from scratch-gui
 COPY --from=builder /app/packages/scratch-gui/build /usr/share/nginx/html
 
-# Copy nginx configuration for SPA routing
+# Custom nginx config for SPA
 RUN echo 'server { \
     listen 80; \
-    server_name _; \
     root /usr/share/nginx/html; \
     index index.html; \
     location / { \
         try_files $uri $uri/ /index.html; \
     } \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ { \
         expires 1y; \
         add_header Cache-Control "public, immutable"; \
     } \
