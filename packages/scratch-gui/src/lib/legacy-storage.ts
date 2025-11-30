@@ -131,7 +131,7 @@ export class LegacyStorage implements GUIStorage {
     }
 
     private getAssetGetConfig (asset: Asset) {
-        return `${this.assetHost}/internalapi/asset/${asset.assetId}.${asset.dataFormat}/get/`;
+        return `${this.assetHost}/internalapi/asset/${asset.assetId}.${asset.dataFormat}/get`;
     }
 
     private getAssetCreateConfig (asset: Asset) {
