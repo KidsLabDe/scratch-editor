@@ -16,9 +16,9 @@ COPY . .
 # Install dependencies
 RUN npm ci
 
-# Build only scratch-gui (the other packages are built as dependencies)
-# This is more memory-efficient than building all workspaces
-RUN cd packages/scratch-gui && npm run build
+# Build scratch-gui using workspace command from root
+# This ensures workspace symlinks are properly resolved
+RUN npm run build --workspace=@scratch/scratch-gui
 
 # Production stage - serve with nginx
 FROM nginx:alpine
