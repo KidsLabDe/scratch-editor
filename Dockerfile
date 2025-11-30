@@ -5,6 +5,9 @@ FROM node:20-alpine AS builder
 ARG BACKEND_URL=https://gameslab.kidslab.de
 ENV BACKEND_URL=${BACKEND_URL}
 
+# Increase Node.js memory limit for build (default is too low for webpack)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 WORKDIR /app
 
 # Copy everything first (npm ci needs scripts for prepare hooks)
@@ -13,8 +16,9 @@ COPY . .
 # Install dependencies
 RUN npm ci
 
-# Build the project with BACKEND_URL environment variable
-RUN npm run build
+# Build only scratch-gui (the other packages are built as dependencies)
+# This is more memory-efficient than building all workspaces
+RUN cd packages/scratch-gui && npm run build
 
 # Production stage - serve with nginx
 FROM nginx:alpine
