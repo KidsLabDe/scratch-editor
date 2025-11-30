@@ -12,8 +12,8 @@ const onClickLogo = () => {
     window.location = 'https://scratch.mit.edu';
 };
 
-// Local backend configuration - change these URLs to match your backend
-const LOCAL_BACKEND_HOST = 'https://localhost:8080';
+// Backend URL from environment variable (set in webpack.config.js via DefinePlugin)
+const LOCAL_BACKEND_HOST = process.env.BACKEND_URL;
 
 // Helper to get cookie by name
 const getCookie = name => {

@@ -4,6 +4,7 @@ const webpack = require('webpack');
 // Plugins
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
 
 const ScratchWebpackConfigBuilder = require('scratch-webpack-configuration');
 
@@ -58,11 +59,18 @@ const baseConfig = new ScratchWebpackConfigBuilder(
         resourceQuery: /^$/, // reject any query string
         type: 'asset' // let webpack decide on the best type of asset
     })
+    .addPlugin(new Dotenv({
+        path: path.resolve(__dirname, '.env'),
+        safe: false,
+        systemvars: true, // Load system environment variables (for Docker)
+        defaults: false
+    }))
     .addPlugin(new webpack.DefinePlugin({
         'process.env.DEBUG': Boolean(process.env.DEBUG),
         'process.env.GA_ID': `"${process.env.GA_ID || 'UA-000000-01'}"`,
         'process.env.GTM_ENV_AUTH': `"${process.env.GTM_ENV_AUTH || ''}"`,
-        'process.env.GTM_ID': process.env.GTM_ID ? `"${process.env.GTM_ID}"` : null
+        'process.env.GTM_ID': process.env.GTM_ID ? `"${process.env.GTM_ID}"` : null,
+        'process.env.BACKEND_URL': `"${process.env.BACKEND_URL || 'https://localhost:8080'}"`
     }))
     .addPlugin(new CopyWebpackPlugin({
         patterns: [
